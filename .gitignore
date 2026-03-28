@@ -30,6 +30,8 @@ application.yml
 # (Optional: keep template instead)
 !application-example.properties
 
+#=============
+.env
 # ===============================
 # IDE - IntelliJ
 # ===============================
