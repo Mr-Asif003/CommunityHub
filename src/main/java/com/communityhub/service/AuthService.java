@@ -6,6 +6,7 @@ import com.communityhub.dto.LoginRequest;
 import com.communityhub.dto.RegisterRequest;
 import com.communityhub.entity.User;
 import com.communityhub.entity.VerificationToken;
+import com.communityhub.exception.UserNotFoundException;
 import com.communityhub.repository.UserRepository;
 import com.communityhub.repository.VerificationTokenRepository;
 import com.communityhub.security.JwtUtil;
@@ -14,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.UUID;
 
 @Service
@@ -45,7 +48,14 @@ public class AuthService {
         VerificationToken vt = new VerificationToken();
         vt.setToken(token);
         vt.setUserId(user.getId());
-        vt.setExpiryDate(LocalDateTime.now().plusHours(24));
+        vt.setExpiryDate(
+                Date.from(
+                        LocalDateTime.now()
+                                .plusHours(24)
+                                .atZone(ZoneId.systemDefault())
+                                .toInstant()
+                )
+        );
 
         tokenRepo.save(vt);
 
@@ -68,7 +78,7 @@ public class AuthService {
                     .build();
         }
 
-        if (vt.getExpiryDate().isBefore(LocalDateTime.now())) {
+        if (vt.getExpiryDate().before(new Date())) {
             return ApiResponse.builder()
                     .success(false)
                     .message("Token expired")
@@ -88,7 +98,7 @@ public class AuthService {
     public ApiResponse<?> login(LoginRequest req) {
 
         User user = userRepo.findByEmail(req.getEmail())
-                .orElseThrow(()->new RuntimeException("Invalid User"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         if (!user.isEnabled()) {
             return ApiResponse.builder()

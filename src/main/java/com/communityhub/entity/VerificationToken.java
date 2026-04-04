@@ -2,9 +2,10 @@ package com.communityhub.entity;
 
 import lombok.Data;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 @Document(collection = "tokens")
 @Data
@@ -16,5 +17,6 @@ public class VerificationToken {
     private String token;
     private String userId;
 
-    private LocalDateTime expiryDate;
+    @Indexed(name = "expiry_ttl", expireAfter = "0s")
+    private Date expiryDate;
 }
