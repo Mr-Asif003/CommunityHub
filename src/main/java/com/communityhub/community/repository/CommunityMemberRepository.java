@@ -12,11 +12,11 @@ import java.util.List;
 public interface CommunityMemberRepository extends MongoRepository<CommunityMember, String> {
 
 
-
+    boolean existsByUserIdAndCommunityId(String userId, String communityId);
 
     List<CommunityMember> findByUserId(String userId);
     CommunityMember deleteByCommunityId(String communityId);
 
-
+    List<CommunityMember> findByCommunityId(String communityId);
 
 }

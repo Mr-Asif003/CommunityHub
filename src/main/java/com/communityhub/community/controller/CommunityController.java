@@ -3,6 +3,7 @@ package com.communityhub.community.controller;
 import com.communityhub.auth.dto.ApiResponse;
 import com.communityhub.community.dto.CommunityCreateRequest;
 import com.communityhub.community.entity.base.Community;
+import com.communityhub.community.entity.base.CommunityMember;
 import com.communityhub.community.service.CommunityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -62,4 +63,10 @@ public class CommunityController {
         String email = auth.getName();
         return communityService.deleteCommunity(communityId, email);
     }
+
+    @GetMapping("/{communityId}/members")
+    public ApiResponse getMembers(@PathVariable String communityId){
+        return communityService.findMembers(communityId);
+    }
+
 }

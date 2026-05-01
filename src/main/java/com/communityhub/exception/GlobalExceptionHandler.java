@@ -26,7 +26,7 @@ public class GlobalExceptionHandler {
 
         ApiResponse<Object> response = ApiResponse.builder()
                 .success(false)
-                .message("Something went wrong")
+                .message("Something went wrong -> "+ex.getMessage())
                 .data(null)
                 .build();
 

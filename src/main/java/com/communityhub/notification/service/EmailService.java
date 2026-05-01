@@ -14,7 +14,15 @@ public class EmailService {
         SimpleMailMessage msg=new SimpleMailMessage();
         msg.setTo(email);
         msg.setSubject("Community Hub: Verify your account");
-        msg.setText("click here: " +link);
+        msg.setText("Hi User!\n Please Verify your account by clicking on this link: " +link);
         sender.send(msg);
     }
+    public void sendMessage(String email,String message){
+        SimpleMailMessage msg=new SimpleMailMessage();
+        msg.setTo(email);
+        msg.setSubject("Community Hub");
+        msg.setText("Hi User"+message);
+        sender.send(msg);
+    }
+
 }

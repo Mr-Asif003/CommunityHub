@@ -2,6 +2,8 @@ package com.communityhub.complaint.entity;
 
 
 
+import com.communityhub.complaint.dto.ReplyRequest;
+import com.communityhub.complaint.entity.embedded.Reply;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -34,10 +36,12 @@ public class Complaint {
     private String status;
 
     private String priority;
+    private String reporterLastDate;
 
     private List<String> evidenceImages;
 
     private LocalDate expectedResolutionDate;
 
     private LocalDateTime createdAt;
+    private Reply reply;
 }

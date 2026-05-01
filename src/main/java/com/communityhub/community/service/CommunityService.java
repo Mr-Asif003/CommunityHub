@@ -142,6 +142,20 @@ public class CommunityService {
                 .build();
     }
 
+     public ApiResponse  findMembers(String communityId){
+           List<CommunityMember> members=communityMemberRepository.findByCommunityId(communityId);
+           if(members.isEmpty()) {
+               return ApiResponse.builder()
+                       .success(false)
+                       .message("members not exists or invalid community Id")
+                       .build();
+           }
+           return ApiResponse.builder()
+                   .success(true)
+                   .message("fetch members successfully")
+                   .data(members)
+                   .build();
+     }
 
     public ApiResponse deleteCommunity(String communityId, String email) {
 

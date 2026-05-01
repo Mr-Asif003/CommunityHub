@@ -30,6 +30,7 @@ public class Poll {
     private List<PollOption> options;
 
     private LocalDateTime expiresAt;
+    private String decisionMade;
 
     private boolean anonymous;
 }
