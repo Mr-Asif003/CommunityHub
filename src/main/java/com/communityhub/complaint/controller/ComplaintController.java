@@ -5,51 +5,100 @@ import com.communityhub.complaint.dto.ComplaintRequest;
 import com.communityhub.complaint.dto.ReplyRequest;
 import com.communityhub.complaint.dto.UpdateComplaintRequest;
 import com.communityhub.complaint.service.ComplaintService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/communities/{communityId}/complaints")
+@RequiredArgsConstructor
 public class ComplaintController {
 
-    @Autowired
-    private ComplaintService complaintService;
+    private final ComplaintService complaintService;
 
     // ✅ Get all complaints
     @GetMapping
-    public ApiResponse getComplaint(@PathVariable String communityId) {
+    public ApiResponse getComplaints(
+            @PathVariable String communityId,
+            Authentication auth
+    ) {
+
+        if (auth == null || !auth.isAuthenticated()) {
+            return ApiResponse.builder()
+                    .success(false)
+                    .message("User not authenticated")
+                    .build();
+        }
+
         return complaintService.getComplaints(communityId);
     }
 
     // ✅ Create complaint
     @PostMapping
     public ApiResponse createComplaint(
-            @RequestBody ComplaintRequest complaint,
+            @Valid @RequestBody ComplaintRequest complaint,
             @PathVariable String communityId,
-            @RequestHeader("userId") String userId
+            Authentication auth
     ) {
 
+        if (auth == null || !auth.isAuthenticated()) {
+            return ApiResponse.builder()
+                    .success(false)
+                    .message("User not authenticated")
+                    .build();
+        }
 
-        return complaintService.createComplaint(complaint, communityId, userId);
+        return complaintService.createComplaint(
+                complaint,
+                communityId,
+                auth.getName()
+        );
     }
 
     // ✅ Reply to complaint
     @PostMapping("/{complaintId}/reply")
     public ApiResponse replyToComplaint(
+            @PathVariable String communityId,
             @PathVariable String complaintId,
-            @RequestBody ReplyRequest request,
-            @RequestHeader("userId") String userId
+            @Valid @RequestBody ReplyRequest request,
+            Authentication auth
     ) {
-        return complaintService.reply(complaintId, request, userId);
+
+        if (auth == null || !auth.isAuthenticated()) {
+            return ApiResponse.builder()
+                    .success(false)
+                    .message("User not authenticated")
+                    .build();
+        }
+
+        return complaintService.reply(
+                complaintId,
+                request,
+                auth.getName()
+        );
     }
 
-    // ✅ Update complaint (by reporter)
+    // ✅ Update complaint
     @PutMapping("/{complaintId}")
     public ApiResponse updateComplaint(
+            @PathVariable String communityId,
             @PathVariable String complaintId,
-            @RequestBody UpdateComplaintRequest request,
-            @RequestHeader("userId") String userId
+            @Valid @RequestBody UpdateComplaintRequest request,
+            Authentication auth
     ) {
-        return complaintService.updateComplaint(complaintId, request, userId);
+
+        if (auth == null || !auth.isAuthenticated()) {
+            return ApiResponse.builder()
+                    .success(false)
+                    .message("User not authenticated")
+                    .build();
+        }
+
+        return complaintService.updateComplaint(
+                complaintId,
+                request,
+                auth.getName()
+        );
     }
 }

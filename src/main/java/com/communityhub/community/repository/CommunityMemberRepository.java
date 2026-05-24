@@ -1,22 +1,78 @@
 package com.communityhub.community.repository;
 
-import com.communityhub.community.entity.base.Community;
 import com.communityhub.community.entity.base.CommunityMember;
-import com.communityhub.community.enums.CommunityType;
+import com.communityhub.community.enums.MembershipStatus;
+
 import org.springframework.data.mongodb.repository.MongoRepository;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
-@Repository
-public interface CommunityMemberRepository extends MongoRepository<CommunityMember, String> {
+public interface CommunityMemberRepository
+        extends MongoRepository<CommunityMember, String> {
 
+    // =========================================
+    // FIND MEMBER
+    // =========================================
+    Optional<CommunityMember>
+    findByCommunityIdAndUserId(
+            String communityId,
+            String userId
+    );
 
-    boolean existsByUserIdAndCommunityId(String userId, String communityId);
+    // =========================================
+    // CHECK MEMBER EXISTS
+    // =========================================
+    boolean existsByCommunityIdAndUserId(
+            String communityId,
+            String userId
+    );
 
-    List<CommunityMember> findByUserId(String userId);
-    CommunityMember deleteByCommunityId(String communityId);
+    // =========================================
+    // FIND ACTIVE MEMBERS
+    // =========================================
+    List<CommunityMember>
+    findByCommunityIdAndStatus(
+            String communityId,
+            MembershipStatus status
+    );
 
-    List<CommunityMember> findByCommunityId(String communityId);
+    // =========================================
+    // FIND ALL COMMUNITY MEMBERS
+    // =========================================
+    List<CommunityMember>
+    findByCommunityId(
+            String communityId
+    );
 
+    // =========================================
+    // FIND USER MEMBERSHIPS
+    // =========================================
+    List<CommunityMember>
+    findByUserId(
+            String userId
+    );
+
+    // =========================================
+    // COUNT MEMBERS
+    // =========================================
+    long countByCommunityIdAndStatus(
+            String communityId,
+            MembershipStatus status
+    );
+
+    // =========================================
+    // DELETE MEMBER
+    // =========================================
+    void deleteByCommunityIdAndUserId(
+            String communityId,
+            String userId
+    );
+
+    // =========================================
+    // DELETE ALL COMMUNITY MEMBERS
+    // =========================================
+    void deleteByCommunityId(
+            String communityId
+    );
 }

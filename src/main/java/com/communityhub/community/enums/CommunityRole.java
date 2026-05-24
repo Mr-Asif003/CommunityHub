@@ -1,6 +1,9 @@
 package com.communityhub.community.enums;
 
-public enum Role {
+public enum CommunityRole {
+
     OWNER,
+    ADMIN,
+    MODERATOR,
     MEMBER
 }

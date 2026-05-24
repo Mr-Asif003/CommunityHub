@@ -18,21 +18,35 @@ public enum CommunityType {
         this.displayName = displayName;
     }
 
-    // ✅ Send this in response
+    // =========================================
+    // RESPONSE VALUE
+    // =========================================
     @JsonValue
     public String getDisplayName() {
         return displayName;
     }
 
-    // ✅ Accept both ENUM + displayName from request
+    // =========================================
+    // REQUEST VALUE PARSER
+    // =========================================
     @JsonCreator
-    public static CommunityType fromValue(String value) {
+    public static CommunityType fromValue(
+            String value
+    ) {
+
         for (CommunityType type : CommunityType.values()) {
-            if (type.name().equalsIgnoreCase(value) ||
-                    type.displayName.equalsIgnoreCase(value)) {
+
+            if (
+                    type.name().equalsIgnoreCase(value)
+                            ||
+                            type.displayName.equalsIgnoreCase(value)
+            ) {
                 return type;
             }
         }
-        throw new IllegalArgumentException("Invalid CommunityType: " + value);
+
+        throw new IllegalArgumentException(
+                "Invalid CommunityType: " + value
+        );
     }
 }

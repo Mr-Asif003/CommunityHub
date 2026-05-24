@@ -16,6 +16,7 @@ import com.communityhub.user.service.UserService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -58,7 +59,7 @@ public class ComplaintService {
 
         // ✅ Validate user exists in same community
         boolean exists = communityMemberRepository
-                .existsByUserIdAndCommunityId(request.getAgainstUserId(), communityId);
+                .existsByCommunityIdAndUserId(communityId,request.getAgainstUserId());
 
 
         if (!exists) {
@@ -77,6 +78,9 @@ public class ComplaintService {
                 .evidenceImages(request.getEvidenceImages())
                 .reportedBy(fromUserId)
                 .againstUserId(request.getAgainstUserId())  // ✅ clean mapping
+                .againstUserName(request.getAgainstUserName())
+                .reporterUserName(request.getReporterName())
+                .reporterId(request.getReporterId())
                 .status("SENT")
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -96,7 +100,7 @@ public class ComplaintService {
 
         Complaint com=complaintRepository.findById(complaintId)
                 .orElseThrow(()->new RuntimeException("invalid complaint id"));
-        if(com.getReportedBy()!=userId){
+        if (!com.getReportedBy().equals(userId)){
             return ApiResponse.builder()
                     .success(false)
                     .message("You are not authorized to  delete this complaint. Only complaint creator can delete it")
@@ -109,56 +113,107 @@ public class ComplaintService {
                 .build();
     }
 
-    public ApiResponse reply(String complaintId, ReplyRequest request, String userId) {
+    public ApiResponse reply(String complaintId,
+                             ReplyRequest request,
+                             String userId) {
 
-        Complaint complaint = complaintRepository.findById(complaintId)
-                .orElseThrow(() -> new RuntimeException("Invalid complaint id"));
+        try {
 
+            System.out.println("===== REPLY API HIT =====");
 
-        if (complaint.getAgainstUserId() == null || !complaint.getAgainstUserId().equals(userId)) {
+            Complaint complaint = complaintRepository.findById(complaintId)
+                    .orElseThrow(() -> new RuntimeException("Invalid complaint id"));
+
+            System.out.println("Complaint Found");
+
+            System.out.println("Against User Id: " + complaint.getAgainstUserId());
+            System.out.println("Current User Id: " + userId);
+
+            // Authorization
+            if (complaint.getAgainstUserId() == null ||
+                    complaint.getAgainstUserId().equals(userId)) {
+
+                return ApiResponse.builder()
+                        .success(false)
+                        .message("You are not authorized to reply to this complaint")
+                        .build();
+            }
+
+            LocalDateTime now = LocalDateTime.now();
+
+            System.out.println("Creating action steps");
+
+            List<ActionStep> steps = request.getActions() != null
+                    ? request.getActions().stream()
+                    .map(a -> ActionStep.builder()
+                            .description(a.getDescription())
+                            .images(a.getImages())
+                            .timestamp(now)
+                            .build())
+                    .toList()
+                    : List.of();
+
+            System.out.println("Creating reply object");
+
+            Reply reply = Reply.builder()
+                    .respondedBy(userId)
+                    .status(request.getStatus())
+                    .actions(steps)
+                    .expectedResolutionDate(request.getExpectedResolutionDate())
+                    .respondedAt(now)
+                    .build();
+
+            if (complaint.getReplies() == null) {
+                complaint.setReplies(new ArrayList<>());
+            }
+
+            System.out.println("Adding reply");
+
+            complaint.getReplies().add(reply);
+
+            complaint.setStatus(request.getStatus());
+
+            Complaint updated = complaintRepository.save(complaint);
+
+            System.out.println("Complaint saved");
+
+            try {
+
+                UserResponse reporter =
+                        userService.getUserById(complaint.getReportedBy());
+
+                if (reporter != null && reporter.getEmail() != null) {
+
+                    emailService.sendMessage(
+                            reporter.getEmail(),
+                            "Your complaint has received a new reply."
+                    );
+
+                    System.out.println("Email sent");
+                }
+
+            } catch (Exception e) {
+
+                System.out.println("EMAIL ERROR");
+                e.printStackTrace();
+            }
+
+            return ApiResponse.builder()
+                    .success(true)
+                    .message("Reply submitted successfully")
+                    .data(updated)
+                    .build();
+
+        } catch (Exception e) {
+
+            System.out.println("MAIN ERROR");
+            e.printStackTrace();
+
             return ApiResponse.builder()
                     .success(false)
-                    .message("You are not authorized to reply to this complaint")
+                    .message(e.getMessage())
                     .build();
         }
-
-
-        LocalDateTime now = LocalDateTime.now();
-
-
-        List<ActionStep> steps = request.getActions() != null
-                ? request.getActions().stream()
-                .map(a -> ActionStep.builder()
-                        .description(a.getDescription())
-                        .images(a.getImages())
-                        .timestamp(now)
-                        .build())
-                .toList()
-                : List.of();
-        if (steps != null) {
-            steps.forEach(step -> step.setTimestamp(LocalDateTime.now()));
-        }
-
-
-        Reply reply = Reply.builder()
-                .respondedBy(userId)
-                .status(request.getStatus())
-                .actions(steps)
-                .expectedResolutionDate(request.getExpectedResolutionDate())
-                .respondedAt(LocalDateTime.now())
-                .build();
-
-        complaint.setReply(reply);
-        complaint.setStatus(request.getStatus());
-
-        Complaint updated = complaintRepository.save(complaint);
-        UserResponse u=userService.getUserById(complaint.getReportedBy());
-        emailService.sendMessage(updated.getReportedBy(),"New update: You have got reply of your complaint");
-        return ApiResponse.builder()
-                .success(true)
-                .message("Reply with actions submitted successfully")
-                .data(updated)
-                .build();
     }
     public ApiResponse updateComplaint(String complaintId, UpdateComplaintRequest request, String userId) {
 
@@ -174,7 +229,7 @@ public class ComplaintService {
         }
 
         //  Optional restriction: don't allow update after reply
-        if (complaint.getReply() != null) {
+        if (complaint.getReplies() != null) {
             return ApiResponse.builder()
                     .success(false)
                     .message("Cannot update complaint after it has been replied")

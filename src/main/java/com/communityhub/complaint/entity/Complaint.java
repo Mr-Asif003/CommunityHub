@@ -10,6 +10,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -26,6 +27,9 @@ public class Complaint {
     private String communityId;
 
     private String reportedBy;
+    private String againstUserName;
+    private String reporterUserName;
+    private String reporterId;
 
     private String againstUserId;
 
@@ -43,5 +47,5 @@ public class Complaint {
     private LocalDate expectedResolutionDate;
 
     private LocalDateTime createdAt;
-    private Reply reply;
+    private List<Reply> replies = new ArrayList<>();
 }

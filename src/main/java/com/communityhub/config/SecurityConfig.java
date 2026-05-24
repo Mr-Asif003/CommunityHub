@@ -41,9 +41,22 @@ public class SecurityConfig {
                 )
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // ✅ Fixed: /** covers all sub-paths like /api/auth/login, /api/auth/register
+                        // Public auth endpoints
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // Communities — public read, secured writes handled at service layer
                         .requestMatchers("/api/communities/**").permitAll()
-                        .anyRequest().authenticated()                // Everything else requires valid JWT
+
+                        // ✅ FIX: Chat REST endpoints require authentication via JWT cookie
+                        // They were missing from the permit list, causing 403s on message fetch
+                        .requestMatchers("/api/chat/**").authenticated()
+
+                        // WebSocket handshake endpoint — auth is handled by
+                        // WebSocketAuthInterceptor (reads JWT cookie), NOT Spring Security
+                        .requestMatchers("/ws-chat/**").permitAll()
+
+                        // Everything else also requires a valid JWT
+                        .anyRequest().authenticated()
                 )
 
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -61,13 +74,18 @@ public class SecurityConfig {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOriginPatterns(List.of("*"));   // Allow all origins (restrict in prod)
-        config.setAllowedMethods(List.of("*"));           // GET, POST, PUT, DELETE, etc.
-        config.setAllowedHeaders(List.of("*"));           // Authorization, Content-Type, etc.
+        // ✅ Must match your frontend origin exactly — no trailing slash
+        config.setAllowedOrigins(List.of("http://localhost:8081"));
+
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        config.setAllowedHeaders(List.of("*"));
+
+        // ✅ REQUIRED: allows the browser to send the JWT cookie on every request
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config); // ✅ Fixed: was /*, now /** to cover all paths
+        source.registerCorsConfiguration("/**", config);
 
         return source;
     }

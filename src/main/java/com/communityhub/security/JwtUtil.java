@@ -1,16 +1,13 @@
 package com.communityhub.security;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
@@ -20,47 +17,56 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String secret;
 
+    @Value("${jwt.expiration:86400000}") // default 24h
+    private long jwtExpiration;
+
     // ================================
-    // Create signing key (HS256)
+    // Signing key
     // ================================
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes());
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     // ================================
-    // Generate JWT Token (1 hour expiry)
-    // ================================ java// 15 minutes
-    //1000L * 60 * 15
-    //
-    //// 1 hour (current)
-    //1000L * 60 * 60
-    //
-    //// 24 hours
-    //1000L * 60 * 60 * 24
-    //
-
-    /// / 7 days
-    //1000L * 60 * 60 * 24 * 7
+    // Generate token
+    // ================================
     public String generateToken(String email) {
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new Date())
-                .setExpiration(
-                        new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24) // ✅ Fixed: was 1000  60 * 60
-                )
+                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
     // ================================
-    // Extract username (email) from token
+    // Extract username
     // ================================
     public String extractUsername(String token) {
         return extractAllClaims(token).getSubject();
     }
 
     // ================================
-    // Extract all claims from token
+    // Validate token
+    // ================================
+    public boolean isTokenValid(String token) {
+        try {
+            extractAllClaims(token);
+            return true;
+        } catch (ExpiredJwtException e) {
+            System.out.println("Token expired");
+        } catch (SignatureException e) {
+            System.out.println("Invalid signature");
+        } catch (MalformedJwtException e) {
+            System.out.println("Malformed token");
+        } catch (Exception e) {
+            System.out.println("Invalid token");
+        }
+        return false;
+    }
+
+    // ================================
+    // Extract claims
     // ================================
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
@@ -68,32 +74,5 @@ public class JwtUtil {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-    }
-
-    // ================================
-    // Validate token — returns false if
-    // expired, malformed, or bad signature
-    // ================================
-    public boolean validateToken(String token) {
-        try {
-            // ✅ parseClaimsJws() already throws ExpiredJwtException if expired
-            // No need for manual date check — removed the redundant double-check
-            Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
-                    .build()
-                    .parseClaimsJws(token);
-            return true;
-
-        } catch (ExpiredJwtException e) {
-            System.out.println("Token expired: " + e.getMessage());
-        } catch (SignatureException e) {
-            System.out.println("Invalid signature: " + e.getMessage());
-        } catch (MalformedJwtException e) {
-            System.out.println("Malformed token: " + e.getMessage());
-        } catch (Exception e) {
-            System.out.println("Invalid token: " + e.getMessage());
-        }
-
-        return false;
     }
 }

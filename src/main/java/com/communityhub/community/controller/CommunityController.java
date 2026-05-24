@@ -2,8 +2,8 @@ package com.communityhub.community.controller;
 
 import com.communityhub.auth.dto.ApiResponse;
 import com.communityhub.community.dto.CommunityCreateRequest;
+import com.communityhub.community.dto.JoinCommunityRequest;
 import com.communityhub.community.entity.base.Community;
-import com.communityhub.community.entity.base.CommunityMember;
 import com.communityhub.community.service.CommunityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,52 +21,64 @@ public class CommunityController {
 
     @GetMapping
     public List<Community> getUserCommunities(Authentication auth) {
-
-        if (auth == null || !auth.isAuthenticated()) {
-            throw new RuntimeException("User not authenticated");
-        }
-
-        String email = auth.getName();
-
-        return communityService.getUserCommunities(email);
+        return communityService.getUserCommunities(auth.getName());
     }
 
-    @PostMapping("/create")
-    public ApiResponse createCommunity(@Valid @RequestBody CommunityCreateRequest req,
-                                       Authentication auth) {
-
-        if (auth == null || !auth.isAuthenticated()) {
-            return ApiResponse.builder()
-                    .success(false)
-                    .message("User not authenticated")
-                    .build();
-
-        }
-
-        String email = auth.getName();
-        return communityService.createCommunity(req, email);
+    @GetMapping("/discover")
+    public ApiResponse discoverCommunities(Authentication auth) {
+        return communityService.getDiscoverCommunities(auth.getName());
     }
 
+    @PostMapping
+    public ApiResponse createCommunity(
+            @Valid @RequestBody CommunityCreateRequest req,
+            Authentication auth
+    ) {
+        return communityService.createCommunity(req, auth.getName());
+    }
 
     @PutMapping("/{communityId}")
-    public ApiResponse updateCommunity(@PathVariable String communityId,
-                                       @RequestBody CommunityCreateRequest req,
-                                       Authentication auth) {
-
-        String email = auth.getName();
-        return communityService.updateCommunity(communityId, req, email);
+    public ApiResponse updateCommunity(
+            @PathVariable String communityId,
+            @RequestBody CommunityCreateRequest req,
+            Authentication auth
+    ) {
+        return communityService.updateCommunity(communityId, req, auth.getName());
     }
-    @DeleteMapping("/{communityId}")
-    public ApiResponse deleteCommunity(@PathVariable String communityId,
-                                       Authentication auth) {
 
-        String email = auth.getName();
-        return communityService.deleteCommunity(communityId, email);
+    @DeleteMapping("/{communityId}")
+    public ApiResponse deleteCommunity(
+            @PathVariable String communityId,
+            Authentication auth
+    ) {
+        return communityService.deleteCommunity(communityId, auth.getName());
+    }
+
+    @GetMapping("/{communityId}")
+    public ApiResponse getCommunityById(@PathVariable String communityId) {
+        return communityService.findById(communityId);
     }
 
     @GetMapping("/{communityId}/members")
-    public ApiResponse getMembers(@PathVariable String communityId){
+    public ApiResponse getMembers(@PathVariable String communityId) {
         return communityService.findMembers(communityId);
     }
 
+    @PostMapping("/{communityId}/join")
+    public ApiResponse joinCommunity(
+            @PathVariable String communityId,
+            @Valid @RequestBody JoinCommunityRequest req,
+            Authentication auth
+    ) {
+        req.setCommunityId(communityId);
+        return communityService.joinCommunity(req, auth.getName());
+    }
+
+    @PostMapping("/{communityId}/leave")
+    public ApiResponse leaveCommunity(
+            @PathVariable String communityId,
+            Authentication auth
+    ) {
+        return communityService.leaveCommunity(communityId, auth.getName());
+    }
 }

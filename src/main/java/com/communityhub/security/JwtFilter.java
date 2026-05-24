@@ -2,10 +2,11 @@ package com.communityhub.security;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -15,16 +16,14 @@ import java.io.IOException;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
 
-    // ✅ Skip this filter entirely for public routes
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String path = request.getServletPath();
-        return path.startsWith("/api/auth/"); // register, login, etc. bypass JWT check
+        return request.getServletPath().startsWith("/api/auth/");
     }
 
     @Override
@@ -33,16 +32,14 @@ public class JwtFilter extends OncePerRequestFilter {
                                     FilterChain chain)
             throws ServletException, IOException {
 
-        String header = req.getHeader("Authorization");
+        String token = extractJwtFromCookie(req); // 🔥 changed
 
-        if (header != null && header.startsWith("Bearer ")) {
+        if (token != null) {
 
-            String token = header.substring(7);
-
-            if (!jwtUtil.validateToken(token)) {
+            if (!jwtUtil.isTokenValid(token)) {
                 res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 res.setContentType("application/json");
-                res.getWriter().write("{\"error\": \"Token expired or invalid. Please log in again.\"}");
+                res.getWriter().write("{\"error\":\"Invalid or expired token\"}");
                 return;
             }
 
@@ -52,16 +49,26 @@ public class JwtFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().getAuthentication() == null) {
 
                 UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(
-                                email,
-                                null,
-                                List.of()
-                        );
+                        new UsernamePasswordAuthenticationToken(email, null, List.of());
 
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
         }
 
         chain.doFilter(req, res);
+    }
+
+    // 🔥 NEW METHOD
+    private String extractJwtFromCookie(HttpServletRequest request) {
+
+        if (request.getCookies() == null) return null;
+
+        for (Cookie cookie : request.getCookies()) {
+            if ("jwt".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+
+        return null;
     }
 }

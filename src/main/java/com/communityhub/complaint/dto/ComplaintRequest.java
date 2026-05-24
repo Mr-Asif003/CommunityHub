@@ -18,6 +18,9 @@ public class ComplaintRequest {
 
     private String title;
     private String againstUserId;
+    private String reporterName ;
+    private String againstUserName;
+    private String reporterId;
 
     private String description;
 

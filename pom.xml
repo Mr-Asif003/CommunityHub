@@ -56,6 +56,16 @@
             <artifactId>spring-boot-starter-web-services</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <!-- Version is managed automatically by spring-boot-starter-parent -->
+        </dependency>
+
 <!--        web socket -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
